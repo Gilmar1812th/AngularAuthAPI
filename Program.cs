@@ -25,6 +25,7 @@ builder.Services.AddDbContext<AppDbContext>(option =>
 {
     option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnStr"));
 });
+builder.Services.AddScoped<IEmailService, emailService>();
 
 // Serviço para Token
 builder.Services.AddAuthentication(x =>
