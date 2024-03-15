@@ -6,10 +6,11 @@ namespace AngularAuthAPI.Helpers
     public class PasswordHasher
     {
         private static RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();        
-        private static readonly int SaltSize = 16;
-        private static readonly int HasSize = 20;
-        private static readonly int Iterations = 10000;
+        private static readonly int SaltSize = 16; // tamanho do salto
+        private static readonly int HasSize = 20; // tamanho do hash
+        private static readonly int Iterations = 10000; // interações
 
+        #region Cria Hash para senha informada
         public static string HasPassword(string password)
         {
             //var randomNumber = new byte[32];
@@ -35,7 +36,9 @@ namespace AngularAuthAPI.Helpers
                  return refreshToken;
             }*/            
         }
+        #endregion
 
+        #region Verifica se a senha informada
         public static bool VerifyPassWord(string password, string base64Hash) {
             var hashBytes = Convert.FromBase64String(base64Hash);
 
@@ -54,5 +57,6 @@ namespace AngularAuthAPI.Helpers
             }
             return true;
         }
+        #endregion
     }
 }

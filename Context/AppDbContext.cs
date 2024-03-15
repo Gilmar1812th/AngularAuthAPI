@@ -9,10 +9,12 @@ namespace AngularAuthAPI.Context
         {
             
         }
+        // conjunto de banco de dados - nome do modelo
         public DbSet<user> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // nome da tabela que será criada no banco de dados
             modelBuilder.Entity<user>().ToTable("users");
         }        
     }

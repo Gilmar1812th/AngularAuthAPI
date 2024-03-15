@@ -12,22 +12,31 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// 1) resolvendo problema de api origem na chamada da API pelo front-end
 builder.Services.AddCors(options =>
 {
+    // adicionando uma política
     options.AddPolicy("MyPolicy", builder => {
+        // aceitar conexão de qualquer origem
+        // aceitar qualquer método
+        // aceitar qualquer header
         builder.AllowAnyOrigin()
         .AllowAnyMethod()
         .AllowAnyHeader();
     });
 });
 
+// adicionando serviço do banco de dados
 builder.Services.AddDbContext<AppDbContext>(option => 
 {
+    // Usando Sql Server, mas poderia ser outro banco de dados    
     option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnStr"));
 });
+// Serviço de envio de e-mail
 builder.Services.AddScoped<IEmailService, emailService>();
 
-// Serviço para Token
+// Adicionar o serviço para Token
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -39,16 +48,17 @@ builder.Services.AddAuthentication(x =>
     x.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
+        // Informar que o token deve validar a chave secreta
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("veryverysecret......")),
         ValidateAudience = false,
         ValidateIssuer = false
-        //ClockSkew = TimeSpan.Zero (Verificar Token por 10 segundos)
+        //ClockSkew = TimeSpan.Zero (Token estará autenticado por 10 segundos)
     };
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline, somente no ambiente de desenvolvimento
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -57,11 +67,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// 2) resolvendo problema de api origem na chamada da API pelo front-end
+// adicionando pipeline
 app.UseCors("MyPolicy");
 
-// Autenticação
+// 3) Autenticação
 app.UseAuthentication();
 
+// 4) Autorização
 app.UseAuthorization();
 
 app.MapControllers();

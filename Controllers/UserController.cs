@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Cryptography;
 using AngularAuthAPI.Models.Dto;
+using AngularAuthAPI.UtilityService;
 
 namespace AngularAuthAPI.Controllers
 {
@@ -19,6 +20,7 @@ namespace AngularAuthAPI.Controllers
 
     public class UserController : ControllerBase
     {
+        // injeção de dependência
         private readonly AppDbContext _authContext;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailservice;
@@ -29,7 +31,7 @@ namespace AngularAuthAPI.Controllers
           _emailservice = emailService;
         }       
 
-        [HttpPost("authenticate")]
+        [HttpPost("authenticate")] // nome da rota
         public async Task<IActionResult> Authenticate([FromBody] user userObj)
         {
           if(userObj == null)
@@ -47,6 +49,7 @@ namespace AngularAuthAPI.Controllers
           user.RefreshToken = newRefreshToken;
           // Vai expirar o token de atualização após 5 dias
           user.RefreshTokenExpiryTime = DateTime.Now.AddDays(5);
+          // preservar o token de ataulização no banco de dados
           await _authContext.SaveChangesAsync();
 
           return Ok(new TokenApiDto() {
@@ -55,7 +58,7 @@ namespace AngularAuthAPI.Controllers
           });
         }
 
-        [HttpPost("register")]
+        [HttpPost("register")] // nome da rota
         public async Task<IActionResult> RegisterUser([FromBody] user userObj)
         {
           if(userObj == null)
@@ -69,7 +72,7 @@ namespace AngularAuthAPI.Controllers
           if(await checkEmailExistAsync(userObj.Email))
             return BadRequest(new { Message = "E-mail já cadastrado!"});
 
-          // Checar senha de acesso
+          // Checar se a senha de acesso esta no padrão
           var pass = CheckPasswordStrength(userObj.Password);
           if(!string.IsNullOrEmpty(pass))
             return BadRequest(new { Message = pass.ToString() });          
@@ -89,11 +92,14 @@ namespace AngularAuthAPI.Controllers
         private Task<bool> checkUserNameExistAsync(string username)
           => _authContext.Users.AnyAsync(x => x.UserName == username);
         #endregion
-
-       private Task<bool> checkEmailExistAsync(string email)
+        
+        #region checar se o e-mail já existe
+        private Task<bool> checkEmailExistAsync(string email)
           => _authContext.Users.AnyAsync(x => x.Email == email);
-
-       private string CheckPasswordStrength(string password) {
+        #endregion
+        
+        #region validar o padrão da senha informada
+        private string CheckPasswordStrength(string password) {
           StringBuilder sb = new StringBuilder();
 
           if(password.Length < 8)           
@@ -108,19 +114,28 @@ namespace AngularAuthAPI.Controllers
 
           return sb.ToString();
        }
+       #endregion
 
+       #region criação do token
        private string CreateJwt(user user)
        {
+          // manipulador de JWT Token
           var jwtTokenHandler = new JwtSecurityTokenHandler();
+          // Chave secreta
           var key = Encoding.ASCII.GetBytes("veryverysecret......");
+          // Criar as identidades
           var identity = new ClaimsIdentity(new Claim[]
           {
+            // O Token terá
             new Claim(ClaimTypes.Role, user.Role),
             new Claim(ClaimTypes.Name, $"{user.UserName}")
+            // new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
           });
 
+          // Credenciais - Chave de segurança - Criar assinatura
           var credentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);
 
+          // Descriptor de Token
           var tokenDescriptor = new SecurityTokenDescriptor
           {
             Subject = identity,
@@ -131,11 +146,16 @@ namespace AngularAuthAPI.Controllers
             SigningCredentials = credentials
           };
 
+          // Criar Token
           var token = jwtTokenHandler.CreateToken(tokenDescriptor);
 
+          // Retornar token criado criptografado
+          // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
           return jwtTokenHandler.WriteToken(token);
        }
+       #endregion
 
+       #region RefreshTonken - Criar método de atualização do token 
        private string CreateRefreshToken() {
         var tokenBytes = RandomNumberGenerator.GetBytes(64);
         var refreshToken = Convert.ToBase64String(tokenBytes);
@@ -149,7 +169,9 @@ namespace AngularAuthAPI.Controllers
         }
         return refreshToken;
        }
+       #endregion
 
+       // Pegar as credenciais do token expirado
        private ClaimsPrincipal GetPrincipleFromExpiredToken(string token)
        {
           var key = Encoding.ASCII.GetBytes("veryverysecret......");
@@ -166,20 +188,22 @@ namespace AngularAuthAPI.Controllers
           var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
           var jwtSecurityToken = securityToken as JwtSecurityToken;
 
+          // checar algoritimo do token gerado
           if(jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
           {
             throw new SecurityTokenException("Este é um token inválido");
           }
-          return principal;          
+          return principal;
        }
 
-       [Authorize]
+       [Authorize] // atributo - autorização - se não tiver token não tem acesso ao endpoint
        [HttpGet]
        public async Task<ActionResult<user>> GetAllUser()
        {
           return Ok(await _authContext.Users.ToListAsync());
        }
 
+       // Atualizar token - vai gerar um novo token de acesso para o usuário
        [HttpPost("refresh")]
        public async Task<IActionResult> Refresh(TokenApiDto tokenApiDto)
        {
@@ -207,9 +231,11 @@ namespace AngularAuthAPI.Controllers
           });
        }
 
+       // Envio de e-mail para redefinição de senha 
        [HttpPost("send-reset-email/{email}")]
        public async Task<IActionResult> SendEmail(string email)
        {
+          // validar usuário - verificar se o usuário existe
           var user = await _authContext.Users.FirstOrDefaultAsync(a => a.Email == email);
 
           if(user is null)
@@ -224,11 +250,13 @@ namespace AngularAuthAPI.Controllers
           var tokenBytes = RandomNumberGenerator.GetBytes(64);
           var emailToken = Convert.ToBase64String(tokenBytes);
           user.ResetPasswordToken = emailToken;
-          // Token irá expirar em 15 minutos
-          user.ResetPasswordExpiry = DateTime.Now.AddMinutes(15); 
+          // Link de e-mail para redefinição de senha irá expirar em 15 minutos
+          user.ResetPasswordExpiry = DateTime.Now.AddMinutes(15);
           string from = _configuration["EmailSettings:From"];
           var emailModel = new EmailModel(email, "Reset Password", EmailBody.EmailStringBody(email, emailToken));
+          // Envio do email
           _emailservice.SendEmail(emailModel);
+          // Alterando o estado para modificado
           _authContext.Entry(user).State = EntityState.Modified;
           await _authContext.SaveChangesAsync();
           return Ok(new 
@@ -238,6 +266,7 @@ namespace AngularAuthAPI.Controllers
           });
        }
 
+       // clicou no link de redefinição de senha
        [HttpPost("reset-password")]
        public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPassworDto)
        {
@@ -261,11 +290,12 @@ namespace AngularAuthAPI.Controllers
             return BadRequest(new
             {
               StatusCode = 400,
-              Message = "Link de redefinição inválido."
+              Message = "Link de redefinição inválido, solicite outro link."
             });
           }
 
           user.Password = PasswordHasher.HasPassword(ResetPasswordDto.NewPassword);
+          // marcar como modificado
           _authContext.Entry(user).State = EntityState.Modified;
           await _authContext.SaveChangesAsync();
           return Ok(new

@@ -16,7 +16,7 @@ namespace AngularAuthAPI.Helpers
               <hr>
                 <p style=""color:grey"">Você está recebendo este e-mail porque solicitou uma redefinição de senha da sua conta Let's Program.</p>
 
-                <p style=""color:grey"">Por favor, toque no botão abaixo para escolher uma nova senha.</p>
+                <p style=""color:grey"">Por favor, clique no botão abaixo para escolher uma nova senha.</p>
 
               <a href=""http://localhost:4200/reset?email={email}&code={emailToken}"" target=""_blank"" style=""background:#0d6efd;padding:10px;border:none;
               color:white;border-radius:4px;display:block;margin:0 auto;width:50%;text-align:center;text-decoration:none"">Redefinir senha</a><br>
