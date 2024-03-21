@@ -1,15 +1,15 @@
+using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.RegularExpressions;
-using AngularAuthAPI.Context;
-using AngularAuthAPI.Helpers;
-using AngularAuthAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Authorization;
 using System.Security.Cryptography;
+using AngularAuthAPI.Context;
+using AngularAuthAPI.Helpers;
+using AngularAuthAPI.Models;
 using AngularAuthAPI.Models.Dto;
 using AngularAuthAPI.UtilityService;
 
@@ -251,7 +251,7 @@ namespace AngularAuthAPI.Controllers
           var emailToken = Convert.ToBase64String(tokenBytes);
           user.ResetPasswordToken = emailToken;
           // Link de e-mail para redefinição de senha irá expirar em 15 minutos
-          user.ResetPasswordExpiry = DateTime.Now.AddMinutes(15);
+          user.ResetPassWordExpiry = DateTime.Now.AddMinutes(15);
           string from = _configuration["EmailSettings:From"];
           var emailModel = new EmailModel(email, "Reset Password", EmailBody.EmailStringBody(email, emailToken));
           // Envio do email
@@ -268,10 +268,10 @@ namespace AngularAuthAPI.Controllers
 
        // clicou no link de redefinição de senha
        [HttpPost("reset-password")]
-       public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPassworDto)
+       public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
        {
-          var newToken = resetPassworDto.EmailToken.Replace(" ", "+");
-          var user = await _authContext.Users.AsNoTracking().FirstOrDefaultAsync(a => a.Email = resetPassworDto.Email);
+          var newToken = resetPasswordDto.EmailToken.Replace(" ", "+");          
+          var user = await _authContext.Users.AsNoTracking().FirstOrDefaultAsync(a => a.Email == resetPasswordDto.Email);          
 
           if(user is null)
           {
@@ -283,9 +283,9 @@ namespace AngularAuthAPI.Controllers
           }
 
           var tokenCode = user.ResetPasswordToken;
-          DateTime emailTokenExpiry = user.ResetPasswordExpiry;
+          DateTime emailTokenExpiry = user.ResetPassWordExpiry;
 
-          if(tokenCode != ResetPasswordDto.EmailToken || emailTokenExpiry < DateTime.Now)
+          if(tokenCode != resetPasswordDto.EmailToken || emailTokenExpiry < DateTime.Now)
           {
             return BadRequest(new
             {
@@ -294,7 +294,7 @@ namespace AngularAuthAPI.Controllers
             });
           }
 
-          user.Password = PasswordHasher.HasPassword(ResetPasswordDto.NewPassword);
+          user.Password = PasswordHasher.HasPassword(resetPasswordDto.NewPassword);
           // marcar como modificado
           _authContext.Entry(user).State = EntityState.Modified;
           await _authContext.SaveChangesAsync();

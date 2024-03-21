@@ -1,4 +1,5 @@
 ﻿using System;
+
 namespace AngularAuthAPI.Helpers
 {
     public static class EmailBody

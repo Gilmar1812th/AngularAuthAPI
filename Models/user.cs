@@ -20,7 +20,7 @@ namespace AngularAuthAPI.Models
         // Tempo de expiração
         public DateTime RefreshTokenExpiryTime { get; set; }
         // Redefinição de senha
-        public string? ResetPasswordToken { get; set; }
+        public string? ResetPasswordToken { get; set; }        
         // Depois de algum tempo o link de redefinição de senha expira (5 minutos)
         public DateTime ResetPassWordExpiry { get; set; }
     }

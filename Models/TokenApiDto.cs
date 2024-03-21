@@ -1,4 +1,4 @@
-namespace AngularAuthAPI.Models.Dto
+namespace AngularAuthAPI.Models
 {
     public class TokenApiDto
     {    

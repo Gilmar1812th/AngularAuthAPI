@@ -1,15 +1,14 @@
-using AngularAuthAPI.Models.Dto;
+using System;
 
-namespace AngularAuthAPI.Models.Dto
+namespace AngularAuthAPI.Models
 {
     public class EmailModel
     {
-        // Propriedades
         public string To { get; set; }
         public string Subject { get; set; }
-        public string Content { get; set; }
+        public string Content { get; set; }                
 
-        // construtor
+        // construtor        
         public EmailModel(string to, string subject, string content)
         {
             To = to;

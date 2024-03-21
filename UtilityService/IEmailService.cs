@@ -1,4 +1,4 @@
-using AngularAuthAPI.Models.Dto;
+using AngularAuthAPI.Models;
 
 namespace AngularAuthAPI.UtilityService
 {

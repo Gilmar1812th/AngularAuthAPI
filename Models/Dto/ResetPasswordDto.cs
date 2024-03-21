@@ -1,3 +1,5 @@
+using System;
+
 namespace AngularAuthAPI.Models.Dto
 {
     public record ResetPasswordDto

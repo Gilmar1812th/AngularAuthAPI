@@ -1,8 +1,9 @@
 using System.Text;
-using AngularAuthAPI.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using AngularAuthAPI.Context;
+using AngularAuthAPI.UtilityService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +35,7 @@ builder.Services.AddDbContext<AppDbContext>(option =>
     option.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnStr"));
 });
 // Serviço de envio de e-mail
-builder.Services.AddScoped<IEmailService, emailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Adicionar o serviço para Token
 builder.Services.AddAuthentication(x =>
